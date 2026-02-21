@@ -13,7 +13,12 @@ const auth_router = require("./routes/auth_router");
 
 const app = express();
 const Server = http.createServer(app);
-const io = socketIO(Server);
+const io = socketIO(Server , {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(express.json());
 app.use(cookieParser());
