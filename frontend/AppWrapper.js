@@ -16,7 +16,6 @@ export default function AppWrapper() {
 
   // Handle auth success
   const handleAuthSuccess = (newToken) => {
-    console.log("Auth success, token:", newToken); // Debug log
     localStorage.setItem("token", newToken);
     setToken(newToken);
   };
@@ -30,7 +29,7 @@ export default function AppWrapper() {
   // Show loading state while checking token
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-900 text-white">
+      <div style={{height:'100dvh'}} className="flex items-center justify-center bg-gray-900 text-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
           <p className="mt-4 text-gray-400">Loading...</p>
