@@ -69,7 +69,22 @@ io.on("connect", (socket) => {
   console.log("👤 User id:", socket.userId);
   console.log("📊 Total online users:", onlineUsers.size);
   
-  // add user to the onlineUser map
+   for (const [id, data] of onlineUsers) {
+    if (id === socket.userId) {
+      // notify old partner if they were in a call
+      if (data.partnerId) {
+        const partner = onlineUsers.get(data.partnerId);
+        if (partner) {
+          partner.status = "IDLE";
+          partner.partnerId = null;
+          io.to(partner.SocketId).emit("partner-disconnected");
+        }
+      }
+      onlineUsers.delete(id);
+      break;
+    }
+  }
+  
   addUser(socket.userId, socket.id);
 
    console.log("Online users:", Array.from(onlineUsers.entries()).map(([id, data]) => ({
@@ -111,7 +126,35 @@ io.on("connect", (socket) => {
   socket.on("next", () => {
     const userId = socket.userId;
     endcall(userId);
-    socket.emit("start");
+    
+    // Reset status then find new match immediately
+    const user = onlineUsers.get(userId);
+    if (user) {
+      user.status = "IDLE";
+      user.partnerId = null;
+    }
+
+    socket.emit("searching"); // tell frontend we're searching
+
+    const partnerId = getRandomFreeUser(userId);
+    if (!partnerId) {
+      socket.emit("match-not-found");
+      return;
+    }
+
+    const partner = onlineUsers.get(partnerId);
+    if (!partner || partner.status !== "IDLE") {
+      socket.emit("match-not-found");
+      return;
+    }
+
+    user.status = "IN_CALL";
+    user.partnerId = partnerId;
+    partner.status = "IN_CALL";
+    partner.partnerId = userId;
+
+    io.to(user.SocketId).emit("match-found", { role: "caller" });
+    io.to(partner.SocketId).emit("match-found", { role: "callee" });
   });
 
   socket.on("stop", () => {
